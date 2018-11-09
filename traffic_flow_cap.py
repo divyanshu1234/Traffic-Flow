@@ -4,7 +4,6 @@ from matplotlib import animation
 
 
 RHO_MAX = 1
-RHO_MIN = 0
 RHO_CRITICAL = 0.3
 RHO_JAM = 0.95
 V_MAX = 1
@@ -13,17 +12,14 @@ V_SB = 0.1
 
 class TrafficFlow:
 
-    def __init__(self, h, k, x, total_time, rho0, f, df, u_to_rho, rho_to_u):
+    def __init__(self, h, k, x, total_time, init_cond, f, df):
         self.h = h
         self.k = k
         self.x = x
         self.total_time = total_time
-        self.init_cond = rho_to_u(rho0)
+        self.init_cond = init_cond
         self.f = f
         self.df = df
-        self.u_to_rho = u_to_rho
-        self.rho_to_u = rho_to_u
-
         self.num_divs = len(x)
         self.num_time_steps = int(total_time / k)
         self.u = np.zeros((self.num_time_steps, self.num_divs))
@@ -59,18 +55,14 @@ class TrafficFlow:
     def apply_boundary_conditions(self):
         if self.is_light_enabled:
             for i in np.arange(0, len(self.toggle_time_indies) - 1, 2):
-                self.u[self.toggle_time_indies[i]: self.toggle_time_indies[i + 1], self.light_position_index] = \
-                    self.rho_to_u(RHO_MAX)
-                self.u[self.toggle_time_indies[i]: self.toggle_time_indies[i + 1], self.light_position_index + 1] = \
-                    self.rho_to_u(RHO_MIN)
+                self.u[self.toggle_time_indies[i]: self.toggle_time_indies[i + 1], self.light_position_index] = -1
+                self.u[self.toggle_time_indies[i]: self.toggle_time_indies[i + 1], self.light_position_index + 1] = 1
 
         if self.is_sb_enabled:
             self.u[:, self.sb_position_index] = V_SB
             if self.is_light_enabled:
                 if self.sb_position_index > self.light_position_index:
-                    self.u[:, self.sb_position_index + 1] = self.rho_to_u(RHO_MIN)
-            else:
-                self.u[:, self.sb_position_index + 1] = self.rho_to_u(RHO_MIN)
+                    self.u[:, self.sb_position_index + 1] = 1
 
     def get_s(self, ui_1, ui):
         s = (self.f(ui_1) - self.f(ui)) / (ui_1 - ui)
@@ -113,6 +105,9 @@ class TrafficFlow:
         self.u[:, 0] = self.u[:, 1]
         self.u[:, -1] = self.u[:, -2]
 
+    def get_rho(self):
+        return self.u
+
     def show_animation(self):
         fig = plt.figure()
         ax = plt.axes(xlim=(self.x[0] - 0.5, self.x[-1] + 0.5), ylim=(-0.5, 1.5))
@@ -122,17 +117,8 @@ class TrafficFlow:
             line.set_data([], [])
             return line,
 
-        def animate(n):
-            x_n = self.x
-            rho_n = self.u_to_rho(self.u)[n, :]
-
-            del_indices = []
-            if self.is_light_enabled:
-                del_indices.append(self.light_position_index)
-            if self.is_sb_enabled:
-                del_indices.append(self.sb_position_index)
-
-            line.set_data(np.delete(x_n, del_indices), np.delete(rho_n, del_indices))
+        def animate(i):
+            line.set_data(self.x, self.get_rho()[i, :])
             return line,
 
         anim = animation.FuncAnimation(fig, animate, init_func=init, frames=self.num_time_steps, interval=5,
