@@ -75,12 +75,12 @@ x = np.arange(-1, 1.6, h)
 
 num_divs = len(x)
 
-rho0 = 0.55 * np.ones(num_divs)
+rho0 = 0.20 * np.ones(num_divs)
 # rho0 = np.linspace(0.0, 0.4, len(x))
 
 
 traffic = tf.TrafficFlow(h=h, k=k, x=x, total_time=20, rho0=rho0, f=f, df=df, df_eq_0=df_eq_0, u_to_rho=u_to_rho, rho_to_u=rho_to_u)
 traffic.enable_light(light_position=0.4, toggle_time_list=np.array([2, 5, 7, 10, 15]))
-# traffic.enable_speed_breaker(sb_position=0.6)
+traffic.enable_speed_breaker(sb_position=0.1)
 traffic.update_gudonov()
 traffic.show_animation()

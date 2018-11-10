@@ -90,20 +90,31 @@ class TrafficFlow:
                     self.rho_to_u(RHO_MIN)
 
         if self.is_sb_enabled:
-            self.u[:, self.sb_position_index] = V_SB
             if self.is_light_enabled:
                 if self.sb_position_index > self.light_position_index:
                     self.u[:, self.sb_position_index + 1] = self.rho_to_u(RHO_MIN)
+                else:
+                    self.u[:, self.sb_position_index] = self.rho_to_u(RHO_MAX)
             else:
                 self.u[:, self.sb_position_index + 1] = self.rho_to_u(RHO_MIN)
 
-    def get_s(self, ui_1, ui):
+    def get_s(self, ui_1, ui, i):
         s = (self.f(ui_1) - self.f(ui)) / (ui_1 - ui)
+
+        if self.is_sb_enabled:
+            if i == self.sb_position_index:
+                s = V_SB * s
+
         return s
 
     def u_star(self, n, i):
         g_u_n_i = self.df(self.u[n, i])
         g_u_n_i1 = self.df(self.u[n, i + 1])
+
+        if self.is_sb_enabled:
+            if i == self.sb_position_index:
+                g_u_n_i = V_SB * g_u_n_i
+                g_u_n_i1 = V_SB * g_u_n_i1
 
         if g_u_n_i >= 0 and g_u_n_i1 >= 0:
             u_star_i = self.u[n, i]
@@ -112,7 +123,7 @@ class TrafficFlow:
             u_star_i = self.u[n, i + 1]
 
         elif g_u_n_i >= 0 and g_u_n_i1 < 0:
-            s = self.get_s(self.u[n, i + 1], self.u[n, i])
+            s = self.get_s(self.u[n, i + 1], self.u[n, i], i)
             if s >= 0:
                 u_star_i = self.u[n, i]
             else:
@@ -131,6 +142,10 @@ class TrafficFlow:
             for i in range(1, self.num_divs - 1):
                 self.u[n + 1, i] = self.u[n, i] - self.k / self.h * \
                                    (self.f(self.u_star(n, i)) - self.f(self.u_star(n, i - 1)))
+
+                if self.is_sb_enabled:
+                    if i == self.sb_position_index:
+                        self.u[n + 1, i] = V_SB * self.u[n + 1, i]
 
             if n % (self.num_time_steps / 100) == 0:
                 print(n, self.num_time_steps - 2)
