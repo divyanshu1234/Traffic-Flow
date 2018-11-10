@@ -13,7 +13,31 @@ V_SB = 0.1
 
 class TrafficFlow:
 
-    def __init__(self, h, k, x, total_time, rho0, f, df, u_to_rho, rho_to_u):
+    """
+    Parameters
+    ----------
+    h : float
+        Length step
+    k : float
+        Time step
+    x : float array
+        Discrete space domain
+    total_time : float
+        Total time for the simulation
+    rho0 : float array
+        Initial condition of density on x
+    f : function
+        Flow function
+    df : function
+        Derivative of flow function
+    df_eq_0 : function
+        Returns value of u for which df = 0
+    u_to_rho : function
+        Converts u to rho
+    rho_to_u : function
+        Converts rho to u
+    """
+    def __init__(self, h, k, x, total_time, rho0, f, df, df_eq_0, u_to_rho, rho_to_u):
         self.h = h
         self.k = k
         self.x = x
@@ -21,6 +45,7 @@ class TrafficFlow:
         self.init_cond = rho_to_u(rho0)
         self.f = f
         self.df = df
+        self.df_eq_0 = df_eq_0
         self.u_to_rho = u_to_rho
         self.rho_to_u = rho_to_u
 
@@ -94,7 +119,7 @@ class TrafficFlow:
                 u_star_i = self.u[n, i + 1]
 
         else:
-            u_star_i = 0
+            u_star_i = self.df_eq_0()
 
         return u_star_i
 
@@ -135,6 +160,6 @@ class TrafficFlow:
             line.set_data(np.delete(x_n, del_indices), np.delete(rho_n, del_indices))
             return line,
 
-        anim = animation.FuncAnimation(fig, animate, init_func=init, frames=self.num_time_steps, interval=5,
+        anim = animation.FuncAnimation(fig, animate, init_func=init, frames=self.num_time_steps, interval=10,
                                        blit=True)
         plt.show()
