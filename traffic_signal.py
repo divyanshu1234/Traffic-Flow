@@ -29,15 +29,21 @@ x = np.arange(-1, 1.6, h)
 
 num_divs = len(x)
 
-rho0 = np.zeros(num_divs)
-rho0[x <= 0] = 1
-rho0[x > 0] = 0
+# Different initial conditions
+rho0 = 0.55 * np.ones(num_divs)
+
+# rho0 = np.linspace(0.1, 0.5, num_divs)
+
+# rho0 = np.zeros(num_divs)
+# rho0[x <= 0] = 1
+# rho0[x > 0] = 0
+
 
 traffic = tf.TrafficFlow(
     h=h,
     k=k,
     x=x,
-    total_time=2,
+    total_time=10,
     rho0=rho0,
     f=f,
     df=df,
@@ -46,8 +52,7 @@ traffic = tf.TrafficFlow(
     rho_to_u=rho_to_u
 )
 
-# traffic.enable_signal(signal_position=0.4, toggle_time_list=np.array([4]))
-# traffic.enable_speed_breaker(sb_position=0.1)
+traffic.enable_signal(signal_position=0.4, toggle_time_list=np.array([2, 5, 7]))
 
 traffic.update_godunov()
 traffic.show_animation()
